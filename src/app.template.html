@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>帕鲁配种链计算器 · 本地版</title>
+<style>
+:root{
+  --bg:#f5f7fb; --bg2:#ffffff; --card:#ffffff; --card2:#f1f4fa; --line:#dbe2ee;
+  --txt:#1e2b45; --muted:#6b7891; --accent:#d9820c; --accent2:#2b7fd4;
+  --ok:#1c9a62; --warn:#d64545; --rare:#7c3aed;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:"Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;font-size:14px}
+body{padding-bottom:60px}
+header{position:sticky;top:0;z-index:30;background:#ffffff;box-shadow:0 2px 12px rgba(24,40,72,.06);
+  border-bottom:1px solid var(--line);padding:12px 18px 0}
+h1{margin:0;font-size:19px;letter-spacing:.5px}
+.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.tabs{display:flex;gap:4px;margin-top:12px;flex-wrap:wrap}
+.tabs button{background:transparent;border:1px solid transparent;border-bottom:none;color:var(--muted);
+  padding:9px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:14px;font-family:inherit}
+.tabs button:hover{color:var(--txt);background:#e7eef9}
+.tabs button.active{background:var(--bg);color:var(--accent);border-color:var(--line);font-weight:600}
+main{max-width:1240px;margin:0 auto;padding:18px}
+section.tab{display:none}
+section.tab.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(24,40,72,.05)}
+.card h2{margin:0 0 4px;font-size:16px}
+.card .hint{color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.65}
+input[type=text],input[type=search],select{background:#ffffff;border:1px solid var(--line);color:var(--txt);
+  border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;outline:none;min-width:0}
+input[type=text]:focus,input[type=search]:focus,select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(43,127,212,.12)}
+button.btn{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:8px;
+  padding:9px 14px;cursor:pointer;font-size:13px;font-family:inherit}
+button.btn:hover{border-color:var(--accent2);color:#14436e;background:#e9f1fb}
+button.btn.primary{background:linear-gradient(180deg,#f2a72d,#dd8a0d);border-color:#dd8a0d;color:#ffffff;font-weight:700}
+button.btn.danger:hover{border-color:var(--warn);color:var(--warn)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{background:#eef2f9;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted)}
+.pill b{color:var(--accent)}
+.pal{display:inline-flex;align-items:center;gap:7px;background:#ffffff;border:1px solid var(--line);
+  border-radius:9px;padding:4px 9px 4px 5px;line-height:1.15;max-width:100%}
+.pal img{width:30px;height:30px;border-radius:7px;object-fit:cover;background:#e9eef6;flex:none}
+.pal .ph{width:30px;height:30px;border-radius:7px;background:#e9eef6;display:none;align-items:center;
+  justify-content:center;font-size:11px;color:var(--muted);flex:none}
+.pal .nm{display:flex;flex-direction:column;min-width:0}
+.pal .nm b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pal .nm i{font-style:normal;font-size:10px;color:var(--accent2)}
+.pal.big img,.pal.big .ph{width:52px;height:52px}
+.pal.big .nm b{font-size:15px}
+.picker{position:relative}
+.picker>button{width:100%;text-align:left;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.picker .menu{position:absolute;z-index:40;top:calc(100% + 4px);left:0;right:0;background:var(--card2);
+  border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(24,40,72,.18);overflow:hidden}
+.picker .menu.hidden{display:none}
+.picker .menu input{width:100%;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:11px 12px}
+.picker .list{max-height:330px;overflow:auto}
+.picker .item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer}
+.picker .item:hover,.picker .item.sel{background:#eaf1fb}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:8px}
+.pcard{position:relative;background:#ffffff;border:1px solid var(--line);border-radius:10px;padding:8px;
+  cursor:pointer;display:flex;gap:8px;align-items:center;user-select:none}
+.pcard:hover{border-color:#9db8dd;box-shadow:0 2px 8px rgba(24,40,72,.07)}
+.pcard.owned{background:#eaf4ff;border-color:#8fc0e8}
+.pcard img{width:38px;height:38px;border-radius:8px;background:#e9eef6;object-fit:cover;flex:none}
+.pcard .ph{width:38px;height:38px;border-radius:8px;background:#e9eef6;display:none;align-items:center;
+  justify-content:center;font-size:10px;color:var(--muted);flex:none}
+.pcard .nm{display:flex;flex-direction:column;min-width:0;flex:1}
+.pcard .nm b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .nm i{font-style:normal;font-size:10px;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .chk{position:absolute;right:7px;top:7px;width:16px;height:16px;border-radius:5px;border:1.5px solid #c2cde0}
+.pcard.owned .chk{background:var(--accent2);border-color:var(--accent2)}
+.pcard.owned .chk::after{content:"✓";position:absolute;left:2px;top:-3px;font-size:13px;color:#ffffff;font-weight:900}
+.pcard .star{position:absolute;right:6px;bottom:5px;font-size:14px;color:#c6cfdf;cursor:pointer;padding:2px 4px}
+.pcard .star.on{color:var(--rare)}
+.pcard .trait{position:absolute;left:7px;bottom:5px;font-size:10px;color:var(--rare);max-width:60%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fafd;border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;margin-bottom:7px}
+.step .no{background:var(--accent);color:#ffffff;font-weight:800;font-size:11px;border-radius:6px;padding:2px 7px;flex:none}
+.step .arrow{color:var(--muted);font-weight:700}
+.step.rare{border-color:#c4a8f7;background:#f7f3ff}
+.step .tag{font-size:10.5px;color:#6d28d9;border:1px solid #c4a8f7;background:#ffffff;border-radius:5px;padding:1px 6px}
+.sum{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 14px}
+.sum .box{background:linear-gradient(180deg,#ffffff,#f1f5fc);border:1px solid var(--line);border-radius:12px;
+  padding:12px 16px;min-width:132px}
+.sum .box span{display:block;color:var(--muted);font-size:11.5px}
+.sum .box b{font-size:22px;color:var(--accent)}
+.msg{border-radius:10px;padding:11px 13px;font-size:13px;margin-bottom:10px;line-height:1.65}
+.msg.err{background:#fdecef;border:1px solid #f3b6c2;color:#8e1f33}
+.msg.info{background:#eaf3fd;border:1px solid #a9cdf0;color:#14436e}
+.msg.ok{background:#e9f8f0;border:1px solid #a7e0c3;color:#12603f}
+.msg.warn{background:#fdf5e3;border:1px solid #e8cf94;color:#6b4e11}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{background:#ffffff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;
+  display:inline-flex;gap:7px;align-items:center;cursor:pointer}
+.chip.on{border-color:var(--rare);color:#5b21b6;background:#f7f3ff}
+.modal{position:fixed;inset:0;background:rgba(23,35,58,.42);display:flex;align-items:center;justify-content:center;z-index:80}
+.modal.hidden{display:none}
+.modal .box{background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:18px;width:min(430px,92vw);box-shadow:0 20px 50px rgba(24,40,72,.22)}
+.modal h3{margin:0 0 8px;font-size:16px}
+.modal p{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.table th{color:var(--muted);font-weight:500}
+.muted{color:var(--muted)}
+.kbd{background:#eef2f9;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px}
+.scroll{max-height:460px;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="row" style="justify-content:space-between;align-items:flex-start">
+    <div>
+      <h1>帕鲁配种链计算器</h1>
+      <div class="sub">完全离线运行 · 配种数据取自 pals.wiki 全组合表（299 只帕鲁 / 44850 组配对）</div>
+    </div>
+    <div class="pill" id="saveState">存档：读取中…</div>
+  </div>
+  <div class="tabs">
+    <button data-tab="plan" class="active">配种链规划</button>
+    <button data-tab="owned">我的帕鲁</button>
+    <button data-tab="calc">配种查询</button>
+    <button data-tab="about">公式与说明</button>
+  </div>
+</header>
+<main>
+<section class="tab active" id="tab-plan">
+  <div class="card">
+    <h2>1. 选择目标帕鲁</h2>
+    <div class="hint">先在「我的帕鲁」里勾选你已经拥有的帕鲁（可标记稀有词条），再回到这里规划配种链。</div>
+    <div class="row">
+      <div style="flex:1;min-width:260px" id="targetPicker"></div>
+      <button class="btn danger" id="clearTarget">清除</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>2. 选择模式</h2>
+    <div class="hint">两种模式共用同一个已拥有配种池，区别在于是否强制把稀有词条传下去。</div>
+    <div class="row" style="gap:22px">
+      <label class="row" style="gap:7px;cursor:pointer;align-items:flex-start">
+        <input type="radio" name="mode" value="1" checked>
+        <span><b>模式一 · 最短路径</b><br><span class="muted" style="font-size:12px">只求最快配出目标，忽略词条</span></span>
+      </label>
+      <label class="row" style="gap:7px;cursor:pointer;align-items:flex-start">
+        <input type="radio" name="mode" value="2">
+        <span><b style="color:var(--rare)">模式二 · 继承稀有词条</b><br><span class="muted" style="font-size:12px">把这些带词条的帕鲁都编进配种链，并把词条传到目标身上</span></span>
+      </label>
+    </div>
+    <div id="rarePanel" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="row" style="justify-content:space-between">
+        <div class="hint" style="margin:0">
+          词条栏目（最多 4 条，留空即不用）。同一栏可以放<b>多只</b>同词条的帕鲁，工具会把它们一起纳入搜索取最短；<br>
+          只填 1 栏 = 单条词条多只帕鲁。目标需要<b>同时带齐</b>下面被填写的词条。
+        </div>
+        <button class="btn" id="goOwned">已拥有 <b id="cntOwned2">0</b> 只 · 去添加</button>
+      </div>
+      <div id="slotRows" style="margin-top:12px"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="muted" style="font-size:12px">优先目标：</span>
+      <select id="objMode">
+        <option value="steps">最少配种次数（更快达成）</option>
+        <option value="depth">最少世代数（链更短更稳）</option>
+      </select>
+    </div>
+  </div>
+  <div class="card">
+    <h2>3. 计算配种链</h2>
+    <div class="row">
+      <button class="btn primary" id="runBtn">开始计算</button>
+      <span class="pill">已拥有 <b id="cntOwned">0</b> 只</span>
+      <span class="pill">稀有词条 <b id="cntRare">0</b> 只</span>
+    </div>
+    <div id="planOut" style="margin-top:14px"></div>
+  </div>
+</section>
+<section class="tab" id="tab-owned">
+  <div class="card">
+    <h2>配种池：勾选你已拥有的帕鲁</h2>
+    <div class="hint">
+      点击卡片 = 拥有 / 不拥有；点击右下角 <span style="color:var(--rare)">★</span> = 标记「带稀有词条的这只帕鲁」并填写词条名。<br>
+      数据会自动保存在本机浏览器里，也可以用「导出 / 导入」在设备间转移。
+    </div>
+    <div class="row">
+      <input type="search" id="search" placeholder="搜索：中文名 / 英文名 / 图鉴编号（如 009 或 Lamball）" style="flex:1;min-width:220px">
+      <select id="elFilter"><option value="">全部属性</option></select>
+      <select id="viewFilter">
+        <option value="all">全部帕鲁</option>
+        <option value="owned">只看已拥有</option>
+        <option value="rare">只看稀有词条</option>
+        <option value="none">只看未拥有</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:10px">
+          <button class="btn" id="selAll">全选（当前筛选）</button>
+          <button class="btn" id="selNone">全不选（当前筛选）</button>
+          <button class="btn" id="exportBtn">导出存档</button>
+          <button class="btn" id="importBtn">导入存档</button>
+          <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+          <span class="pill" id="ownedStat">—</span>
+        </div>
+        <div class="msg info" id="restoreNote" style="display:none;margin-top:10px"></div>
+        <div class="grid" id="palGrid" style="margin-top:14px"></div>
+  </div>
+</section>
+<section class="tab" id="tab-calc">
+  <div class="card">
+    <h2>父母 → 子代</h2>
+    <div class="row">
+      <div style="flex:1;min-width:220px" id="p1Picker"></div>
+      <span style="color:var(--muted);font-weight:800;font-size:20px">+</span>
+      <div style="flex:1;min-width:220px" id="p2Picker"></div>
+    </div>
+    <div id="childOut" style="margin-top:16px"></div>
+  </div>
+  <div class="card">
+    <h2>子代 → 父母（可多种组合）</h2>
+    <div class="row">
+      <div style="flex:1;min-width:220px" id="cPicker"></div>
+      <label class="row" style="gap:6px"><input type="checkbox" id="onlyOwnedBoth"> 只看双方都已拥有</label>
+    </div>
+    <div id="parentsOut" style="margin-top:14px"></div>
+  </div>
+</section>
+<section class="tab" id="tab-about">
+  <div class="card">
+    <h2>配种公式（结论）</h2>
+    <div class="hint">以下是从游戏数据 + 网站配种表反推的规则；本工具直接用「全组合表」查表，结果与 pals.wiki 完全一致。</div>
+    <ol style="line-height:1.95;margin:0;padding-left:20px">
+      <li><b>同种自交规则</b>：父母是同一只帕鲁 → 子代就是该帕鲁（<span class="kbd">A + A = A</span>）。</li>
+      <li><b>特殊固定配方优先</b>：例如 <span class="kbd">火麒麟 + 冲浪鸭 = 热浪鸭</span>、<span class="kbd">毛掸儿·雷 + 毛掸儿·雷 = 夜茸兽</span> 之类，直接指定子代。</li>
+      <li><b>其余组合按「配种力 CombiRank」计算</b>：<br>
+        <span class="kbd">中值 = floor((配种力A + 配种力B + 1) / 2)</span>，子代取 <b>配种力最接近中值</b> 的帕鲁；<br>
+        若距离相同，再按游戏内的重复优先级（CombiDuplicatePriority）与亚种标识决定。</li>
+      <li><b>只能自交的帕鲁</b>：空涡龙、唤冬兽、圣光骑士、混沌骑士、贝菈诺娃系列、暴电熊、百合女王、异构格里芬等 27 只，除自交外没有别的配方。</li>
+    </ol>
+    <div class="msg info" style="margin-top:12px">
+      因为公式里的平局优先级（CombiDuplicatePriority）不在公开表里，纯公式会有少量偏差；本工具直接内嵌了 299 × 299 的完整配种表（含全部特殊配方），所以结果与网站查到的完全一致。
+    </div>
+  </div>
+  <div class="card">
+    <h2>两种模式怎么用</h2>
+    <table class="table">
+      <tr><th style="width:150px">模式</th><th>说明</th></tr>
+      <tr><td><b>模式一</b><br>最短路径</td>
+        <td>把「已拥有配种池」当作全部可用起点，求把目标帕鲁配出来所需<b>最少配种次数</b>的方案；完全不考虑词条。</td></tr>
+      <tr><td><b>模式二</b><br>继承稀有词条</td>
+        <td>用 4 个「词条栏目」指定要带到目标身上的词条（最多 4 条，留空即不用）。<br>
+        每一栏可以放<b>多只</b>同词条的帕鲁，工具会把它们一起纳入搜索、自动挑最省的那只去接入链条；
+        <b>算的是同一条链</b>，不是各算一遍取最短。<br>
+        目标需要<b>同时带齐</b>被填写的所有词条。<span class="muted">代价：路线通常更长，因为词条帕鲁的配种力可能不在最优路径上。</span></td></tr>
+    </table>
+    <div class="msg info" style="margin-top:12px">
+      <b>词条怎么传：</b>每一代只要<b>任意一只亲本</b>带该词条，子代就有机会继承（不需要双亲都带）。所以两个不同的词条
+      （例如「传说」和「神圣」）要汇到同一只身上，就在某一步让分别带着它们的两个人配对，让子代同时继承。
+      同一只帕鲁可以放进多个栏目，那就等于它同时提供这几条。<br>
+      如果工具提示「不可达」，说明配种表里没有能把这几条同时汇到目标的路线——可以减少一条词条，或者换一只离目标更近的词条帕鲁。
+    </div>
+    <div class="msg info" style="margin-top:12px">
+      <b>配种次数怎么算：</b>游戏里亲本配完不会被消耗，所以同一只帕鲁可以反复当亲本。本工具按「<b>需要新配出多少只不同的帕鲁</b>」计算，
+      每只只需要配一次，之后可以同时喂给多条支路——所以方案里<b>不会出现重复的配方</b>（网上那些把同一只帕鲁配好几遍的算法，都是假设亲本被消耗了）。
+      已拥有的帕鲁、以及标了 ★ 的带词条帕鲁，都视为数量无限。
+    </div>
+    <div class="msg warn" style="margin-top:12px">
+      <b>关于词条遗传的说明：</b>游戏里子代的词条是从父母双方词条中有概率继承的（并非 100% 必得，且最多 4 条）。本工具保证的是「路线结构正确」——
+      每一代都让带词条的亲本参与配种，使子代<b>有机会</b>继承该词条。实际没出就重复配同一对；若想提高概率，尽量让词条帕鲁与词条少（干净）的帕鲁配对。
+    </div>
+  </div>
+  <div class="card">
+    <h2>其它</h2>
+    <ul style="line-height:1.95;margin:0;padding-left:20px">
+      <li>存档保存在浏览器 localStorage；用「导出存档 / 导入存档」可以备份或在设备间迁移。</li>
+      <li>帕鲁图标存放于同目录 <span class="kbd">icons/</span> 文件夹（离线可用）；图标缺失时会自动降级为文字卡片。</li>
+      <li>数据版本：pals.wiki 当前配种表（含 204 号枯星龙等新帕鲁）。游戏更新后需要重新生成数据。</li>
+    </ul>
+  </div>
+</section>
+</main>
+<div class="modal hidden" id="modal">
+  <div class="box">
+    <h3>把这只帕鲁放进词条栏目</h3>
+    <p id="modalDesc"></p>
+    <input type="text" id="modalInput" list="traitPresets" placeholder="栏目名 / 词条名，如：传说、神圣" style="width:100%">
+    <datalist id="traitPresets"></datalist>
+    <div class="hint" style="margin-top:8px">填一个词条名：同名的帕鲁会进同一栏（最多 4 栏）。留空 = 把这只从所有栏目里移出。</div>
+    <div class="row" style="margin-top:14px;justify-content:flex-end">
+      <button class="btn" id="modalRemove">移出所有栏目</button>
+      <button class="btn" id="modalCancel">取消</button>
+      <button class="btn primary" id="modalOk">确定</button>
+    </div>
+  </div>
+</div>
+<div class="modal hidden" id="pickModal">
+  <div class="box" style="width:min(660px,94vw)">
+    <h3 id="pickTitle">选择帕鲁</h3>
+    <p class="muted" id="pickHint">从你已拥有的帕鲁里多选。</p>
+    <input type="search" id="pickSearch" placeholder="搜索：中文名 / 英文名 / 编号" style="width:100%">
+    <div id="pickList" class="scroll" style="max-height:340px;margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:6px"></div>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn" id="pickCancel">取消</button>
+      <button class="btn primary" id="pickOk">确定</button>
+    </div>
+  </div>
+</div>
+<script id="paldata">window.PAL_DATA = /*__DATA__*/;</script>
+<script>
+/*__CORE__*/
+</script>
+<script>
+/* ================== 帕鲁配种链计算器 · 纯本地实现 ================== */
+(function () {
+  'use strict';
+  const D = window.PAL_DATA;
+  const core = PalCore.create(D);
+  const N = core.N, PALS = core.PALS, BY_SLUG = core.BY_SLUG, P = core.P, childIdx = core.childIdx, REV = core.REV;
+  const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  function palHTML(slug, cls) {
+    const p = P(slug);
+    if (!p) return '<span class="pal">未知</span>';
+    const img = '<img src="icons/' + p.s + '.webp" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+      + '<span class="ph">' + esc((p.n || p.s).slice(0, 2)) + '</span>';
+    return '<span class="pal ' + (cls || '') + '">' + img + '<span class="nm"><b>' + esc(p.n) + '</b>'
+      + (p.num ? '<i>#' + esc(p.num) + '</i>' : '') + '</span></span>';
+  }
+  /* ---------------- 存档 ---------------- */
+  const KEY = 'palbreeder.v1';
+  // slots：4 个词条栏目，每栏 null 或 { name, pals:[slug] }
+  const store = { owned: new Set(), slots: [null, null, null, null], target: '', mode: 1, obj: 'steps' };
+  let storageOK = true;
+  let restoredCount = 0;   // 本次打开时从上次存档恢复了多少只
+  function load() {
+    try {
+      let raw = null;
+      try { raw = localStorage.getItem(KEY); } catch (e) { storageOK = false; }
+      if (!raw) {
+        // 备份通道：即使浏览器禁止 file:// 页面写 localStorage，刷新后也能靠 window.name 找回
+        try {
+          const n = window.name || '';
+          if (n.indexOf('PALBREEDER:') === 0) raw = n.slice('PALBREEDER:'.length);
+        } catch (e) {}
+      }
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      (d.owned || []).forEach(function (s) { if (BY_SLUG.has(s)) store.owned.add(s); });
+      if (Array.isArray(d.slots)) {
+        d.slots.slice(0, 4).forEach(function (sl, i) {
+          if (!sl) return;
+          const pals = (sl.pals || []).filter(function (s) { return BY_SLUG.has(s); });
+          if (pals.length) { store.slots[i] = { name: sl.name || ('词条' + (i + 1)), pals: pals }; pals.forEach(function (s) { store.owned.add(s); }); }
+        });
+      } else if (d.rare) {
+        // 旧存档：把所有标记过的帕鲁按词条名归到栏目里
+        const groups = new Map();
+        Object.entries(d.rare).forEach(function (e) {
+          if (!BY_SLUG.has(e[0])) return;
+          const key = e[1] || '词条';
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(e[0]);
+          store.owned.add(e[0]);
+        });
+        let i = 0;
+        groups.forEach(function (pals, name) { if (i < 4) store.slots[i++] = { name: name, pals: pals }; });
+      }
+      if (d.target && BY_SLUG.has(d.target)) store.target = d.target;
+      if (d.mode) store.mode = +d.mode;
+      if (d.obj) store.obj = d.obj;
+      restoredCount = store.owned.size;
+    } catch (e) { console.warn(e); }
+  }
+  function save() {
+    const rare = {};
+    store.slots.forEach(function (sl) { if (sl) sl.pals.forEach(function (s) { rare[s] = sl.name; }); });
+    const json = JSON.stringify({ v: 1, owned: [...store.owned], slots: store.slots,
+      rare: rare, target: store.target, mode: store.mode, obj: store.obj });
+    try {
+      localStorage.setItem(KEY, json);
+      storageOK = true;
+    } catch (e) {
+      storageOK = false;
+    }
+    try { window.name = 'PALBREEDER:' + json; } catch (e) {}
+    refreshStats();
+  }
+  /* ---------------- 求解器（核心算法在 PalCore 里，见文件顶部） ---------------- */
+  function solve(targetSlug, mode, obj) { return core.solve(store, targetSlug, mode, obj); }
+  /* ---------------- 页面框架 ---------------- */
+  const $ = function (id) { return document.getElementById(id); };
+  document.querySelectorAll('.tabs button').forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('active', x === b); });
+      document.querySelectorAll('section.tab').forEach(function (s) { s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab); });
+    };
+  });
+  const els = new Set();
+  PALS.forEach(function (p) { (p.el || []).forEach(function (e) { els.add(e); }); });
+  els.forEach(function (e) { const o = document.createElement('option'); o.value = e; o.textContent = e + '属性'; $('elFilter').appendChild(o); });
+  ['传说', '神圣', '凶暴', '冷静', '强壮', '敏捷', '工作狂', '夜猫子'].forEach(function (t) {
+    const o = document.createElement('option'); o.value = t; o.textContent = t; $('traitPresets').appendChild(o);
+  });
+  function makePicker(el, getValue, onChange, placeholder) {
+    el.classList.add('picker');
+    el.innerHTML = '<button class="btn" type="button"><span class="muted">' + placeholder + '</span><span class="muted">▾</span></button>'
+      + '<div class="menu hidden"><input type="search" placeholder="搜索帕鲁…"><div class="list"></div></div>';
+    const btn = el.querySelector('button'), menu = el.querySelector('.menu'),
+      inp = el.querySelector('input'), list = el.querySelector('.list');
+    function renderList() {
+      const q = inp.value.trim().toLowerCase();
+      const items = PALS.filter(function (p) {
+        return !q || p.n.toLowerCase().includes(q) || p.s.toLowerCase().includes(q) || (p.num || '').toLowerCase().includes(q);
+      });
+      list.innerHTML = items.map(function (p) {
+        return '<div class="item' + (getValue() === p.s ? ' sel' : '') + '" data-s="' + p.s + '">' + palHTML(p.s) + '</div>';
+      }).join('') || '<div class="item muted">没有匹配</div>';
+      list.querySelectorAll('.item[data-s]').forEach(function (it) {
+        it.onclick = function () { onChange(it.dataset.s); menu.classList.add('hidden'); paint(); };
+      });
+    }
+    function paint() {
+      const v = getValue();
+      btn.innerHTML = (v ? palHTML(v, 'big') : '<span class="muted">' + placeholder + '</span>') + '<span class="muted">▾</span>';
+    }
+    btn.onclick = function (e) {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+      if (!menu.classList.contains('hidden')) { inp.value = ''; renderList(); inp.focus(); }
+    };
+    inp.oninput = renderList;
+    document.addEventListener('mousedown', function (e) { if (!el.contains(e.target)) menu.classList.add('hidden'); });
+    renderList(); paint();
+    return { paint: paint, renderList: renderList };
+  }
+  const ui = { p1: '', p2: '', c: '' };
+  const targetPicker = makePicker($('targetPicker'), function () { return store.target; },
+    function (s) { store.target = s; save(); }, '选择目标帕鲁…');
+  const p1Picker = makePicker($('p1Picker'), function () { return ui.p1; }, function (s) { ui.p1 = s; renderChild(); }, '亲本 1');
+  const p2Picker = makePicker($('p2Picker'), function () { return ui.p2; }, function (s) { ui.p2 = s; renderChild(); }, '亲本 2');
+  const cPicker = makePicker($('cPicker'), function () { return ui.c; }, function (s) { ui.c = s; renderParents(); }, '子代帕鲁');
+  /* ---------------- 我的帕鲁 ---------------- */
+  function slotsOf(slug) {
+    const out = [];
+    store.slots.forEach(function (sl, i) { if (sl && sl.pals.indexOf(slug) >= 0) out.push(i); });
+    return out;
+  }
+  function traitCount() { return store.slots.filter(Boolean).length; }
+  function maskNames(mask) {
+    const out = [];
+    store.slots.forEach(function (sl, i) { if (sl && (mask & (1 << i))) out.push(sl.name); });
+    return out.join(' + ');
+  }
+  function visiblePals() {
+    const q = $('search').value.trim().toLowerCase(), el = $('elFilter').value, view = $('viewFilter').value;
+    return PALS.filter(function (p) {
+      if (q && !(p.n.toLowerCase().includes(q) || p.s.toLowerCase().includes(q) || (p.num || '').toLowerCase().includes(q))) return false;
+      if (el && !(p.el || []).includes(el)) return false;
+      if (view === 'owned' && !store.owned.has(p.s)) return false;
+      if (view === 'none' && store.owned.has(p.s)) return false;
+      if (view === 'rare' && !slotsOf(p.s).length) return false;
+      return true;
+    });
+  }
+  function renderGrid() {
+    const list = visiblePals();
+    $('palGrid').innerHTML = list.map(function (p) {
+      const owned = store.owned.has(p.s), tr = slotsOf(p.s).map(function (i) { return store.slots[i].name; }).join(' + ');
+      return '<div class="pcard' + (owned ? ' owned' : '') + '" data-s="' + p.s + '">'
+        + '<img src="icons/' + p.s + '.webp" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+        + '<span class="ph">' + esc((p.n || p.s).slice(0, 2)) + '</span>'
+        + '<span class="nm"><b>' + esc(p.n) + '</b><i>' + (p.num ? '#' + esc(p.num) + ' · ' : '') + esc(p.s) + '</i></span>'
+        + '<span class="chk"></span><span class="star' + (tr ? ' on' : '') + '" title="标记稀有词条">★</span>'
+        + (tr ? '<span class="trait">' + esc(tr) + '</span>' : '') + '</div>';
+    }).join('') || '<div class="muted" style="padding:20px">没有匹配的帕鲁</div>';
+    $('palGrid').querySelectorAll('.pcard').forEach(function (c) {
+      c.onclick = function (e) {
+        const s = c.dataset.s;
+        if (e.target.classList.contains('star')) { openTraitModal(s); return; }
+        if (store.owned.has(s)) {
+          store.owned.delete(s);
+          store.slots.forEach(function (sl) { if (sl) sl.pals = sl.pals.filter(function (x) { return x !== s; }); });
+        } else store.owned.add(s);
+        save(); renderGrid();
+      };
+    });
+  }
+  ['search', 'elFilter', 'viewFilter'].forEach(function (id) {
+    $(id).oninput = renderGrid; $(id).onchange = renderGrid;
+  });
+  $('selAll').onclick = function () { visiblePals().forEach(function (p) { store.owned.add(p.s); }); save(); renderGrid(); };
+  $('selNone').onclick = function () { visiblePals().forEach(function (p) { store.owned.delete(p.s); }); save(); renderGrid(); };
+  /* ---------------- 词条弹窗 ---------------- */
+  let modalSlug = null;
+  function openTraitModal(slug) {
+    modalSlug = slug;
+    $('modalDesc').innerHTML = '把 ' + palHTML(slug) + ' 放进某个词条栏目（代表你手里这一只带这条词条）。';
+    const cur = slotsOf(slug);
+    $('modalInput').value = cur.length ? store.slots[cur[0]].name : '';
+    $('modal').classList.remove('hidden');
+    setTimeout(function () { $('modalInput').focus(); }, 30);
+  }
+  $('modalCancel').onclick = function () { $('modal').classList.add('hidden'); };
+  $('modalOk').onclick = function () {
+    const v = $('modalInput').value.trim();
+    store.slots.forEach(function (sl) { if (sl) sl.pals = sl.pals.filter(function (x) { return x !== modalSlug; }); });
+    if (v) {
+      let idx = -1;
+      store.slots.forEach(function (sl, i) { if (idx < 0 && sl && sl.name === v) idx = i; });
+      if (idx < 0) idx = store.slots.findIndex(function (sl, i) { return !sl; });
+      if (idx < 0) { alert('最多 4 条词条，请先清空一个栏目。'); $('modalInput').value = ''; return; }
+      if (!store.slots[idx]) store.slots[idx] = { name: v, pals: [] };
+      store.slots[idx].pals.push(modalSlug);
+      store.owned.add(modalSlug);
+    }
+    $('modal').classList.add('hidden'); save(); renderGrid(); renderRarePanel(); refreshStats();
+  };
+  $('modalRemove').onclick = function () {
+    store.slots.forEach(function (sl) { if (sl) sl.pals = sl.pals.filter(function (x) { return x !== modalSlug; }); });
+    $('modal').classList.add('hidden'); save(); renderGrid(); renderRarePanel(); refreshStats();
+  };
+  $('modalInput').onkeydown = function (e) { if (e.key === 'Enter') $('modalOk').click(); };
+  /* ---------------- 词条栏目面板 ---------------- */
+  let pickSlot = -1, pickChosen = new Set();
+  function renderRarePanel() {
+    const rows = store.slots.map(function (sl, i) {
+      const pals = sl ? sl.pals : [];
+      return '<div class="step" style="align-items:center;margin-bottom:8px">'
+        + '<span class="no">词条' + (i + 1) + '</span>'
+        + '<input type="text" class="slotName" data-i="' + i + '" value="' + esc(sl ? sl.name : '') + '" placeholder="栏目名（可留空）" style="width:130px">'
+        + '<span style="display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:60px">'
+        + (pals.length
+          ? pals.map(function (s) { return '<span class="chip" data-drop="' + i + '::' + s + '">' + palHTML(s) + ' ✕</span>'; }).join('')
+          : '<span class="muted" style="font-size:12px">（留空 = 不用这条词条）</span>')
+        + '</span>'
+        + '<button class="btn addPal" data-i="' + i + '">+ 添加帕鲁</button>'
+        + (sl ? '<button class="btn clearSlot" data-i="' + i + '">清空</button>' : '')
+        + '</div>';
+    }).join('');
+    $('slotRows').innerHTML = rows;
+    $('slotRows').querySelectorAll('.slotName').forEach(function (inp) {
+      inp.onchange = function () {
+        const i = +inp.dataset.i, v = inp.value.trim();
+        if (store.slots[i]) store.slots[i].name = v || ('词条' + (i + 1));
+        else if (v) store.slots[i] = { name: v, pals: [] };
+        save(); renderRarePanel();
+      };
+    });
+    $('slotRows').querySelectorAll('.addPal').forEach(function (b) {
+      b.onclick = function () { openPick(+b.dataset.i); };
+    });
+    $('slotRows').querySelectorAll('.clearSlot').forEach(function (b) {
+      b.onclick = function () {
+        store.slots[+b.dataset.i] = null;
+        save(); renderRarePanel(); renderGrid(); refreshStats();
+      };
+    });
+    $('slotRows').querySelectorAll('.chip[data-drop]').forEach(function (c) {
+      c.onclick = function () {
+        const parts = c.dataset.drop.split('::');
+        const i = +parts[0], s = parts[1];
+        if (store.slots[i]) store.slots[i].pals = store.slots[i].pals.filter(function (x) { return x !== s; });
+        save(); renderRarePanel(); renderGrid();
+      };
+    });
+  }
+  function openPick(idx) {
+    pickSlot = idx;
+    const sl = store.slots[idx];
+    pickChosen = new Set(sl ? sl.pals : []);
+    $('pickTitle').textContent = '词条' + (idx + 1) + (sl && sl.name ? ' · ' + sl.name : '') + '：选择帕鲁';
+    $('pickHint').textContent = '从你已拥有的帕鲁里多选（同一栏可以放多只，工具会一起算）。';
+    $('pickSearch').value = '';
+    function draw() {
+      const q = $('pickSearch').value.trim().toLowerCase();
+      const list = PALS.filter(function (p) {
+        return store.owned.has(p.s) && (!q || p.n.toLowerCase().includes(q) || p.s.toLowerCase().includes(q) || (p.num || '').toLowerCase().includes(q));
+      });
+      $('pickList').innerHTML = list.length ? list.map(function (p) {
+        const on = pickChosen.has(p.s);
+        return '<div class="pcard' + (on ? ' owned' : '') + '" data-p="' + p.s + '" style="padding:6px">'
+          + '<img src="icons/' + p.s + '.webp" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+          + '<span class="ph">' + esc((p.n || p.s).slice(0, 2)) + '</span>'
+          + '<span class="nm"><b>' + esc(p.n) + '</b><i>' + esc(p.s) + '</i></span>'
+          + '<span class="chk"></span></div>';
+      }).join('') : '<div class="muted" style="grid-column:1/-1;padding:16px">没有匹配的已拥有帕鲁（先去「我的帕鲁」勾选）</div>';
+      $('pickList').querySelectorAll('.pcard').forEach(function (c) {
+        c.onclick = function () {
+          const s = c.dataset.p;
+          if (pickChosen.has(s)) pickChosen.delete(s); else pickChosen.add(s);
+          draw();
+        };
+      });
+    }
+    $('pickSearch').oninput = draw;
+    draw();
+    $('pickModal').classList.remove('hidden');
+  }
+  $('pickCancel').onclick = function () { $('pickModal').classList.add('hidden'); };
+  $('pickOk').onclick = function () {
+    const sl = store.slots[pickSlot];
+    const pals = [...pickChosen];
+    if (pals.length) store.slots[pickSlot] = { name: (sl && sl.name) || ('词条' + (pickSlot + 1)), pals: pals };
+    else store.slots[pickSlot] = null;
+    $('pickModal').classList.add('hidden');
+    save(); renderRarePanel(); renderGrid(); refreshStats();
+  };
+  function refreshStats() {
+    const marked = new Set();
+    store.slots.forEach(function (sl) { if (sl) sl.pals.forEach(function (s) { marked.add(s); }); });
+    $('cntOwned').textContent = store.owned.size;
+    $('cntRare').textContent = marked.size;
+    $('cntOwned2').textContent = store.owned.size;
+    $('ownedStat').textContent = '已拥有 ' + store.owned.size + ' / ' + N + '，带词条 ' + marked.size + ' 只 · ' + traitCount() + ' 条词条';
+    const st = $('saveState');
+    if (storageOK) {
+      st.textContent = '存档：已保存 ' + store.owned.size + ' 只（关掉再打开会自动恢复）';
+      st.style.color = '';
+    } else {
+      st.textContent = '存档：本浏览器禁止写入本地存储，请用「导出存档」保存文件';
+      st.style.color = 'var(--warn)';
+    }
+  }
+  /* ---------------- 模式 ---------------- */
+  document.querySelectorAll('input[name=mode]').forEach(function (r) {
+    r.onchange = function () {
+      store.mode = +document.querySelector('input[name=mode]:checked').value;
+      $('rarePanel').style.display = store.mode === 2 ? 'block' : 'none';
+      save();
+    };
+  });
+  $('objMode').onchange = function () { store.obj = $('objMode').value; save(); };
+  $('clearTarget').onclick = function () { store.target = ''; save(); targetPicker.paint(); };
+  /* ---------------- 结果渲染 ---------------- */
+  function run() {
+    const out = $('planOut');
+    if (!store.target) { out.innerHTML = '<div class="msg err">请先选择目标帕鲁。</div>'; return; }
+    if (!store.owned.size) { out.innerHTML = '<div class="msg err">还没有已拥有帕鲁，请到「我的帕鲁」勾选。</div>'; return; }
+    if (store.mode === 2 && !traitCount()) {
+      out.innerHTML = '<div class="msg err">模式二需要先填一个词条栏目（在下面的栏目里点「+ 添加帕鲁」，或到「我的帕鲁」里给帕鲁点 ★）。</div>';
+      return;
+    }
+    const t0 = performance.now();
+    const r = solve(store.target, store.mode, store.obj);
+    const ms = Math.round(performance.now() - t0);
+    if (!r.ok) {
+      let msg = {
+        empty: '配种池是空的，先勾选已拥有帕鲁。',
+        unreachable: '用当前配种池和全部帕鲁都无法配出该目标（该帕鲁可能只能自交，或缺少关键中间帕鲁）。',
+        noTrait: '模式二需要先填一个词条栏目（在下面点「+ 添加帕鲁」）。',
+        noTarget: '目标无效。',
+      }[r.reason] || '无法计算。';
+      let extra = '';
+      if (r.reason === 'unreachable') {
+        const plain = core.solve(store, store.target, 1, store.obj);
+        if (store.mode === 2 && plain.ok) {
+          extra = '<div class="msg warn">不过〈模式一·最短路径〉可以配出它，需要 ' + plain.cost
+            + ' 次配种。说明这些词条帕鲁没法同时汇进通往该目标的配种链（配种力差太远，或目标本身只能自交）。<br>'
+            + '解决办法：① 某一栏换成离目标更近、能进入链路的帕鲁；② 或者少填一栏（只要求带更少的词条）。</div>';
+        } else if (store.mode === 2) {
+          extra = '<div class="msg warn">切到〈模式一〉也配不出来，说明配种池离目标太远。建议先补充几只与目标配种力接近的帕鲁。</div>';
+        }
+      }
+      out.innerHTML = '<div class="msg err">' + msg + '</div>' + extra;
+      return;
+    }
+    const needNames = store.slots.map(function (sl, i) { return sl ? sl.name : null; }).filter(Boolean);
+    const tn = needNames.join(' + ');
+    let html = '';
+    if (r.cost === 0) {
+      html += '<div class="msg ok">目标 <b>' + esc(P(store.target).n) + '</b> 已经在你的配种池里了'
+        + (store.mode === 2 ? '，并且带着词条（<b style="color:var(--rare)">' + esc(tn) + '</b>）' : '') + '，不需要配种。</div>';
+    } else {
+      const used = new Set();
+      r.steps.forEach(function (s) { used.add(s.a); used.add(s.b); used.add(s.c); });
+      html += '<div class="sum">'
+        + '<div class="box"><span>所需配种次数</span><b>' + r.cost + '</b></div>'
+        + '<div class="box"><span>世代数（链长）</span><b>' + r.depth + '</b></div>'
+        + '<div class="box"><span>涉及帕鲁种类</span><b>' + used.size + '</b></div>'
+        + '<div class="box"><span>计算耗时</span><b>' + ms + '<span style="font-size:12px">ms</span></b></div>'
+        + '</div>';
+      if (store.mode === 2) {
+        html += '<div class="msg info">模式二：<b style="color:var(--rare)">' + esc(tn)
+          + '</b> 需要同时汇到目标身上（标紫的步骤就是带上词条的那些）。每一代只要有一只亲本带词条就够；'
+          + '每只帕鲁只配一次、之后可以反复当亲本，所以方案里不会出现重复配方。</div>';
+      }
+    }
+    if (r.cost > 60) {
+      html += '<div class="msg warn"><b>方案偏长（' + r.cost + ' 次配种）：</b>当前配种池离目标太远，实际游戏中不现实。'
+        + '建议再抓/再拥有几只与目标配种力接近的帕鲁，或使用下面的「备选方案」里更短的第一层配方。</div>';
+    }
+    if (r.steps.length) {
+      const cap = 80;
+      html += '<h3 style="font-size:15px;margin:16px 0 8px">配种步骤（按顺序执行）</h3>';
+      r.steps.forEach(function (s, i) {
+        const names = (store.mode === 2 && s.mask) ? maskNames(s.mask) : '';
+        const row = '<div class="step' + (names ? ' rare' : '') + '"><span class="no">第 ' + s.no + ' 步</span>'
+          + palHTML(PALS[s.a].s) + '<span class="arrow">＋</span>' + palHTML(PALS[s.b].s)
+          + '<span class="arrow">＝</span>' + palHTML(PALS[s.c].s)
+          + (names ? '<span class="tag">' + esc(names) + '</span>' : '') + '</div>';
+        if (i < cap) html += row;
+        else html += '<div class="extraSteps" style="display:none">' + row + '</div>';
+      });
+      if (r.steps.length > cap) {
+        html += '<button class="btn" id="showMore">显示其余 ' + (r.steps.length - cap) + ' 步</button>';
+      }
+    }
+    const alts = r.alts.filter(function (a) { return a.cost > 0 && a.cost < Infinity; }).slice(0, 5);
+    if (alts.length) {
+      html += '<h3 style="font-size:15px;margin:18px 0 8px">最后一步的其它选择</h3>';
+      alts.forEach(function (a) {
+        html += '<div class="step"><span class="no">' + a.cost + ' 次</span>'
+          + palHTML(PALS[a.a].s) + '<span class="arrow">＋</span>' + palHTML(PALS[a.b].s)
+          + '<span class="arrow">＝</span>' + palHTML(P(store.target).s)
+          + '<button class="btn useAlt" data-a="' + a.a + '" data-b="' + a.b + '" style="margin-left:auto">用这对</button></div>';
+      });
+    }
+    out.innerHTML = html;
+    const more = out.querySelector('#showMore');
+    if (more) more.onclick = function () {
+      out.querySelectorAll('.extraSteps').forEach(function (d) { d.style.display = 'block'; });
+      more.style.display = 'none';
+    };
+    out.querySelectorAll('.useAlt').forEach(function (b) {
+      b.onclick = function () {
+        ui.p1 = PALS[+b.dataset.a].s; ui.p2 = PALS[+b.dataset.b].s;
+        document.querySelector('.tabs button[data-tab=calc]').click();
+        p1Picker.paint(); p2Picker.paint(); renderChild();
+      };
+    });
+  }
+  $('runBtn').onclick = run;
+  /* ---------------- 配种查询 ---------------- */
+  function renderChild() {
+    const o = $('childOut');
+    if (!ui.p1 || !ui.p2) { o.innerHTML = '<div class="muted">选择两个亲本即可查看子代。</div>'; return; }
+    const c = PALS[childIdx(P(ui.p1).i, P(ui.p2).i)];
+    o.innerHTML = '<div class="row" style="gap:16px">' + palHTML(ui.p1, 'big')
+      + '<span style="font-size:26px;color:var(--accent)">＋</span>' + palHTML(ui.p2, 'big')
+      + '<span style="font-size:26px;color:var(--accent)">＝</span>' + palHTML(c.s, 'big') + '</div>'
+      + (ui.p1 === ui.p2 ? '<div class="msg info" style="margin-top:12px">同种自交：子代固定为亲本本身。</div>' : '');
+  }
+  function renderParents() {
+    const o = $('parentsOut');
+    if (!ui.c) { o.innerHTML = '<div class="muted">选择一只帕鲁，查看能配出它的所有亲本组合。</div>'; return; }
+    const t = P(ui.c);
+    let list = REV[t.i].slice();
+    const onlyOwned = $('onlyOwnedBoth').checked;
+    if (onlyOwned) list = list.filter(function (pr) { return store.owned.has(PALS[pr[0]].s) && store.owned.has(PALS[pr[1]].s); });
+    list.sort(function (x, y) { return (x[0] - y[0]) || (x[1] - y[1]); });
+    o.innerHTML = '<div class="msg info">共 ' + list.length + ' 组亲本组合' + (onlyOwned ? '（双方都已拥有）' : '') + '。</div>'
+      + '<div class="scroll">' + list.map(function (pr) {
+        const a = PALS[pr[0]], b = PALS[pr[1]];
+        const ra = slotsOf(a.s).map(function (i) { return store.slots[i].name; }).join(' + ');
+        const rb = slotsOf(b.s).map(function (i) { return store.slots[i].name; }).join(' + ');
+        return '<div class="step">' + palHTML(a.s) + (ra ? '<span class="tag">' + esc(ra) + '</span>' : '')
+          + '<span class="arrow">＋</span>' + palHTML(b.s) + (rb ? '<span class="tag">' + esc(rb) + '</span>' : '')
+          + '<span class="arrow">＝</span><span class="muted">' + esc(t.n) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  $('onlyOwnedBoth').onchange = renderParents;
+  /* ---------------- 导入导出 ---------------- */
+  $('exportBtn').onclick = function () {
+    const rare = {};
+    store.slots.forEach(function (sl) { if (sl) sl.pals.forEach(function (s) { rare[s] = sl.name; }); });
+    const data = { v: 1, owned: [...store.owned], slots: store.slots, rare: rare,
+      target: store.target, mode: store.mode, obj: store.obj };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '帕鲁配种池-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $('importBtn').onclick = function () { $('importFile').click(); };
+  $('importFile').onchange = function (e) {
+    const f = e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const d = JSON.parse(fr.result);
+        if (d.owned) store.owned = new Set(d.owned.filter(function (s) { return BY_SLUG.has(s); }));
+        store.slots = [null, null, null, null];
+        if (Array.isArray(d.slots)) {
+          d.slots.slice(0, 4).forEach(function (sl, i) {
+            if (!sl) return;
+            const pals = (sl.pals || []).filter(function (s) { return BY_SLUG.has(s); });
+            if (pals.length) { store.slots[i] = { name: sl.name || ('词条' + (i + 1)), pals: pals }; pals.forEach(function (s) { store.owned.add(s); }); }
+          });
+        } else if (d.rare) {
+          const groups = new Map();
+          Object.entries(d.rare).forEach(function (e2) {
+            if (!BY_SLUG.has(e2[0])) return;
+            const key = e2[1] || '词条';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(e2[0]);
+            store.owned.add(e2[0]);
+          });
+          let i = 0;
+          groups.forEach(function (pals, name) { if (i < 4) store.slots[i++] = { name: name, pals: pals }; });
+        }
+        if (d.target && BY_SLUG.has(d.target)) store.target = d.target;
+        if (d.mode) store.mode = +d.mode;
+        if (d.obj) store.obj = d.obj;
+        save(); syncAll();
+        alert('导入成功：已拥有 ' + store.owned.size + ' 只，词条 ' + traitCount() + ' 条。');
+      } catch (err) { alert('导入失败：' + err.message); }
+    };
+    fr.readAsText(f);
+    e.target.value = '';
+  };
+  /* ---------------- 启动 ---------------- */
+  function syncAll() {
+    document.querySelectorAll('input[name=mode]').forEach(function (r) { r.checked = +r.value === store.mode; });
+    $('objMode').value = store.obj;
+    $('rarePanel').style.display = store.mode === 2 ? 'block' : 'none';
+    targetPicker.paint(); renderGrid(); renderRarePanel(); refreshStats();
+    const note = $('restoreNote');
+    if (restoredCount) {
+      note.style.display = 'block';
+      note.innerHTML = '已自动恢复上次的存档：<b>' + restoredCount + '</b> 只已拥有帕鲁'
+        + (traitCount() ? '，其中 <b>' + traitCount() + '</b> 条词条栏目' : '')
+        + '。点卡片可随时取消或重新勾选，每次改动都会立即保存。';
+    } else {
+      note.style.display = 'none';
+    }
+  }
+  load(); syncAll();
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('beforeunload', function () { save(); });
+  }
+  $('goOwned').onclick = function () { document.querySelector('.tabs button[data-tab=owned]').click(); };
+  window.__palbreeder = { store: store, solve: solve, childIdx: childIdx, PALS: PALS, P: P, save: save,
+    traitCount: traitCount, maskNames: maskNames, slotsOf: slotsOf };
+})();
+</script>
+</body>
+</html>
