@@ -63,6 +63,8 @@ var PalCore = (function () {
       if (!tgt) return { ok: false, reason: 'noTarget' };
       obj = obj === 'depth' ? 'depth' : 'steps';
       const wantMask = mode === 2;
+      // 模式一 = 纯最短路径：连掩码都不参与排序/剪枝/去重，保证结果与词条栏目完全无关
+      const useMasks = wantMask;
 
       const owned = new Set();
       if (store.owned) store.owned.forEach(function (s) { const p = P(s); if (p) owned.add(p.i); });
@@ -78,7 +80,7 @@ var PalCore = (function () {
           const sl = store.slots[i];
           if (!sl) continue;
           const pals = [];
-          (sl.pals || []).forEach(function (s) { const p = P(s); if (p) { pals.push(p.i); owned.add(p.i); } });
+          (sl.pals || []).forEach(function (s) { const p = P(s); if (p) pals.push(p.i); });
           pushSlot(sl.name, pals);
         }
       } else if (store.rare && typeof store.rare.forEach === 'function') {
@@ -86,7 +88,6 @@ var PalCore = (function () {
         const groups = new Map();
         store.rare.forEach(function (name, s) {
           const p = P(s); if (!p) return;
-          owned.add(p.i);
           const key = name || '词条';
           if (!groups.has(key)) groups.set(key, []);
           groups.get(key).push(p.i);
@@ -97,12 +98,14 @@ var PalCore = (function () {
       if (wantMask && !slots.length) return { ok: false, reason: 'noTrait' };
 
       const K = slots.length;
-      const requiredMask = K ? (1 << K) - 1 : 0;
+      const requiredMask = (useMasks && K) ? (1 << K) - 1 : 0;   // 模式一不看词条
       const sourceMask = new Map();
-      slots.forEach(function (sl, i) {
-        sl.pals.forEach(function (idx) { sourceMask.set(idx, (sourceMask.get(idx) || 0) | (1 << i)); });
-      });
-      const baseMask = function (idx) { return sourceMask.get(idx) || 0; };
+      if (useMasks) {
+        slots.forEach(function (sl, i) {
+          sl.pals.forEach(function (idx) { sourceMask.set(idx, (sourceMask.get(idx) || 0) | (1 << i)); });
+        });
+      }
+      const baseMask = function (idx) { return useMasks ? (sourceMask.get(idx) || 0) : 0; };
       const KEEP = wantMask ? KEEP_MASK : KEEP_PLAIN;
 
       /* ---------- 方案集合 ---------- */
@@ -113,10 +116,14 @@ var PalCore = (function () {
       const primary = function (p) { return obj === 'depth' ? p.depth : p.cost; };
       const secondary = function (p) { return obj === 'depth' ? p.cost : p.depth; };
       function better(x, y) {                       // 排序：主目标 -> 词条多 -> 次目标
-        return (primary(x) - primary(y)) || (bitsOf(y.mask) - bitsOf(x.mask)) || (secondary(x) - secondary(y));
+        const p = primary(x) - primary(y);
+        if (p) return p;
+        if (useMasks) { const q = bitsOf(y.mask) - bitsOf(x.mask); if (q) return q; }
+        return secondary(x) - secondary(y);
       }
       function dominates(x, y) {                    // x 完全不比 y 差
-        return covers(x.mask, y.mask) && primary(x) <= primary(y) && secondary(x) <= secondary(y);
+        if (useMasks && !covers(x.mask, y.mask)) return false;
+        return primary(x) <= primary(y) && secondary(x) <= secondary(y);
       }
       function sigOf(m) {
         const arr = [];
@@ -155,6 +162,7 @@ var PalCore = (function () {
         for (let i = 0; i < list.length; i++) if (dominates(list[i], cand)) return false;
         if (list.length < KEEP) return true;
         if (better(cand, list[list.length - 1]) < 0) return true;
+        if (!useMasks) return false;
         const maxPop = Math.max.apply(null, list.map(function (p) { return bitsOf(p.mask); }));
         return bitsOf(cand.mask) > maxPop;
       }
@@ -190,7 +198,7 @@ var PalCore = (function () {
               pb.m.forEach(function (v, k) {
                 const cur = m.get(k);
                 if (!cur) { m.set(k, v); return; }
-                if (cur.mask === v.mask) return;
+                if (!useMasks || cur.mask === v.mask) return;
                 // 只保留词条是超集的那条，保证已有记录里的词条掩码始终成立
                 if (covers(v.mask, cur.mask)) m.set(k, v);
               });
@@ -200,7 +208,7 @@ var PalCore = (function () {
                 cmask = e.mask;
                 d = e.d;
               } else {
-                cmask = maskIn(m, a) | maskIn(m, b);
+                cmask = useMasks ? (maskIn(m, a) | maskIn(m, b)) : 0;
                 d = 1 + Math.max(depthIn(m, a), depthIn(m, b));
                 if (!worthTrying(c, { m: m, cost: m.size + 1, depth: d, mask: cmask, sig: '' })) continue;
                 m.set(c, { a: a, b: b, mask: cmask, d: d });
@@ -267,9 +275,13 @@ var PalCore = (function () {
         for (let x = 0; x < la.length; x++) {
           for (let y = 0; y < lb.length; y++) {
             const m = new Map(la[x].m);
-            lb[y].m.forEach(function (v, k) { const cur = m.get(k); if (!cur) m.set(k, v); else if (covers(v.mask, cur.mask)) m.set(k, v); });
+            lb[y].m.forEach(function (v, k) {
+              const cur = m.get(k);
+              if (!cur) m.set(k, v);
+              else if (useMasks && covers(v.mask, cur.mask)) m.set(k, v);
+            });
             const masks = deliveredMasks(m);
-            let cmask = (masks.get(a) || baseMask(a)) | (masks.get(b) || baseMask(b));
+            let cmask = useMasks ? ((masks.get(a) || baseMask(a)) | (masks.get(b) || baseMask(b))) : 0;
             let cost = m.size + 1;
             if (m.has(tgt.i)) { cost = m.size; cmask = masks.get(tgt.i) || 0; }
             if (!covers(cmask, requiredMask)) continue;

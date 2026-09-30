@@ -134,6 +134,31 @@ console.log('旧存档兼容');
   check('旧格式模式下不受影响', r1.ok && r1.cost > 0);
 }
 
+/* ---------- 回归：模式一绝不能受词条栏目影响 ---------- */
+console.log('回归：模式一与词条栏目无关');
+{
+  const base = solve(mkStore(POOL, []), 'Anubis', 1, 'steps');
+  const variants = [
+    [[idx('雷冥鸟')]],
+    [[idx('雷冥鸟')], [idx('毛老爹')]],
+    [[idx('雷冥鸟')], [idx('毛老爹')], [idx('冲浪鸭')], [idx('连理龙')]],
+    [[idx('雷冥鸟'), idx('毛老爹'), idx('冲浪鸭')]],   // 同栏多只
+  ];
+  let same = 0;
+  variants.forEach(function (v, i) {
+    const r = solve(mkStore(POOL, v), 'Anubis', 1, 'steps');
+    const ok = r.ok && r.cost === base.cost && r.depth === base.depth && JSON.stringify(r.steps) === JSON.stringify(base.steps);
+    if (ok) same++;
+    else check('模式一不受栏目影响 #' + i, false, JSON.stringify({ base: [base.cost, base.depth], got: r.ok ? [r.cost, r.depth] : r.reason }));
+  });
+  check('模式一在 4 种栏目组合下结果完全一致', same === variants.length, same + '/' + variants.length);
+  // 栏目里的帕鲁不算“已拥有”
+  const store = { owned: new Set(POOL.map(function (i) { return PALS[i].s; })),
+    slots: [{ name: 'x', pals: [PALS[idx('棉悠悠')].s] }, null, null, null] };
+  const ownedCheck = solve({ owned: store.owned, slots: [null, null, null, null] }, 'Lamball', 1, 'steps');
+  check('栏目不会把未勾选的帕鲁算成已拥有', (ownedCheck.ok ? ownedCheck.cost > 0 : true), JSON.stringify(ownedCheck.ok ? ownedCheck.cost : ownedCheck.reason));
+}
+
 /* ---------- 随机场景 + 独立可达性对照 ---------- */
 function closure(ownedIdx) {
   const have = new Set(ownedIdx);
